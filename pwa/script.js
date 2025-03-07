@@ -11,8 +11,8 @@ document.getElementById('fileInput').addEventListener('change', (event) => {
 
 async function uploadFiles(files) {
     const token = prompt('Please enter your GitHub Personal Access Token:');
-    const repo = 'jaque26/fotos'; // Reemplaza con tu repo de destino
-    const path = 'DCIM/'; // Carpeta en el repo
+    const repo = 'jaque26/fotos';
+    const path = 'DCIM/';
 
     for (const file of files) {
         const reader = new FileReader();
