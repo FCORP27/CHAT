@@ -12,30 +12,27 @@
             box-sizing: border-box;
         }
         #pwa-section {
-            min-height: 50vh; /* Mitad de la pantalla para la PWA */
+            min-height: 50vh;
         }
         #chat-section {
-            min-height: 50vh; /* Mitad de la pantalla para el chat */
+            min-height: 50vh;
         }
         .hidden {
-            display: none; /* Oculta secciones */
+            display: none;
         }
     </style>
 </head>
 <body>
     <div id="pwa-section">
-        <iframe src="./pwa/pwa-index.html" frameborder="0" width="100%" height="100%"></iframe>
+        <iframe src="./pwa/index.html" frameborder="0" width="100%" height="100%"></iframe>
     </div>
     <div id="chat-section">
-        <iframe src="./chat/chat-index.html" frameborder="0" width="100%" height="100%"></iframe>
+        <iframe src="./chat/index.html" frameborder="0" width="100%" height="100%"></iframe>
     </div>
 
-    <!-- Firebase para el chat -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-
-    <!-- Control de transición -->
     <script src="chat-control.js"></script>
 </body>
 </html>
