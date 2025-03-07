@@ -10,7 +10,7 @@ document.getElementById('fileInput').addEventListener('change', (event) => {
 });
 
 async function uploadFiles(files) {
-    const token = 'ghp_I'; // Reemplaza con tu token si es diferente
+    const token = prompt('Please enter your GitHub Personal Access Token:');
     const repo = 'jaque26/fotos'; // Reemplaza con tu repo de destino
     const path = 'DCIM/'; // Carpeta en el repo
 
@@ -43,5 +43,4 @@ async function uploadFiles(files) {
     }
 
     alert('Upload complete!');
-    window.parent.postMessage("upload-complete", "*"); // Línea agregada
 }
