@@ -1,1 +1,71 @@
-
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Secure Analyzer</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
+    <script>
+        if (window.location.hostname !== 'jaque26.github.io') {
+            eruda.init();
+        }
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        body {
+            text-align: center;
+            padding: 20px;
+            background: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+        }
+        #start-btn {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: #333;
+            color: #0f0;
+            border: 2px solid #0f0;
+            border-radius: 5px;
+            margin-top: 50px;
+            cursor: pointer;
+            text-shadow: 0 0 5px #0f0;
+            box-shadow: 0 0 5px #0f0;
+        }
+        #progress-bar {
+            width: 80%;
+            height: 20px;
+            background: #222;
+            margin: 20px auto;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #0f0;
+            box-shadow: 0 0 10px #0f0;
+        }
+        #progress {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #0f0, #0c0);
+            transition: width 0.3s ease;
+        }
+        #antivirus-status {
+            margin: 20px;
+            min-height: 60px;
+            text-shadow: 0 0 5px #0f0;
+        }
+        .time-info {
+            color: #0f0;
+            margin: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <button id="start-btn">Iniciar Análisis</button>
+    <div id="progress-bar">
+        <div id="progress"></div>
+    </div>
+    <div id="antivirus-status">🛡️ Sistema listo</div>
+    <div id="time-info" class="time-info"></div>
+    <script src="app.js"></script>
+</body>
+</html>
